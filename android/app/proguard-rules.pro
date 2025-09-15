@@ -71,6 +71,13 @@
 -keep class com.google.api.client.** { *; }
 -keep class com.google.api.services.** { *; }
 
+# Keep flutter_osm_plugin classes
+-keep class org.osmdroid.** { *; }
+-keep class com.github.florent37.** { *; }
+-keep class dz.osm.** { *; }
+-dontwarn org.osmdroid.**
+-dontwarn com.github.florent37.**
+
 # Ignore missing Google Pay classes
 -dontwarn com.google.android.apps.nbu.paisa.inapp.**
 -dontwarn com.google.android.apps.nbu.paisa.inapp.client.api.**
