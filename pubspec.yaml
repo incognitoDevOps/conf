@@ -84,7 +84,8 @@ dependencies:
   google_place: ^0.4.7
 
   osm_nominatim: ^3.0.1
-  flutter_osm_plugin: ^1.0.8
+  flutter_map: ^7.0.2
+  latlong2: ^0.9.1
   share_plus: ^10.0.3
 
   #payment dependency
