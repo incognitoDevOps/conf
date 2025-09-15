@@ -1,0 +1,2 @@
+/Users/mdegy/BUZLYN/digitalfractal-buzryde-customer/BuzRyde-main/android/app/.cxx/Debug/1p4f5i4w/armeabi-v7a/CMakeFiles/edit_cache.dir
+/Users/mdegy/BUZLYN/digitalfractal-buzryde-customer/BuzRyde-main/android/app/.cxx/Debug/1p4f5i4w/armeabi-v7a/CMakeFiles/rebuild_cache.dir

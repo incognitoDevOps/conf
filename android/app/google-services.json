@@ -1,0 +1,131 @@
+{
+  "project_info": {
+    "project_number": "116120217389",
+    "firebase_url": "https://buzrydecloud-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "buzrydecloud",
+    "storage_bucket": "buzrydecloud.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:116120217389:android:9b67675553da1991d515a4",
+        "android_client_info": {
+          "package_name": "com.buzryde.com"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "116120217389-57gk77m1i043ad1s22botbitgjn7et0i.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.buzryde.com",
+            "certificate_hash": "879172f2d859a6a24e9f14263773262ec555ce1a"
+          }
+        },
+        {
+          "client_id": "116120217389-89megjc697sk662v0gufanfsaaep624v.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.buzryde.com",
+            "certificate_hash": "79704ac15d0c23a58dc7bd98886ff31eb173b846"
+          }
+        },
+        {
+          "client_id": "116120217389-cclkcvrttovl84vum72vmr0q5meqkm5v.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.buzryde.com",
+            "certificate_hash": "b2f3187948c5124380ec1c50248573826ccc3759"
+          }
+        },
+        {
+          "client_id": "116120217389-oelue7jgo57l2f60fjemn0vriu8n6vlf.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.buzryde.com",
+            "certificate_hash": "e83f7892693c481e907fb30529bf593148adeb94"
+          }
+        },
+        {
+          "client_id": "116120217389-98ao1i57n8cnservl30ifchvbr0n7371.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBp2pslYOStEzx5jc7R01ykl_A7CBkmEQI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "116120217389-98ao1i57n8cnservl30ifchvbr0n7371.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "116120217389-69m7sbkg6h2muv9un1vge3krftmpcd06.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "ca.buzryde.driver"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:116120217389:android:6c6b11d7604f545dd515a4",
+        "android_client_info": {
+          "package_name": "driver.buzryde.com"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "116120217389-ge2ftggeckvn662cpa0de8pjkop8uube.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "driver.buzryde.com",
+            "certificate_hash": "e05bb2f877ac3f4db8240373a2f267f6df0d9b59"
+          }
+        },
+        {
+          "client_id": "116120217389-rdgtpgr7aqhvuuiuormujsrtg5otbs3r.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "driver.buzryde.com",
+            "certificate_hash": "879172f2d859a6a24e9f14263773262ec555ce1a"
+          }
+        },
+        {
+          "client_id": "116120217389-98ao1i57n8cnservl30ifchvbr0n7371.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBp2pslYOStEzx5jc7R01ykl_A7CBkmEQI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "116120217389-98ao1i57n8cnservl30ifchvbr0n7371.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "116120217389-69m7sbkg6h2muv9un1vge3krftmpcd06.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "ca.buzryde.driver"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

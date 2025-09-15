@@ -1,0 +1,2 @@
+C:/Users/royjo/OneDrive/Desktop/digitalfractal-buzryde-customer/digitalfractal-buzryde-customer/BuzRyde-main/android/app/.cxx/RelWithDebInfo/5o344s5d/armeabi-v7a/CMakeFiles/edit_cache.dir
+C:/Users/royjo/OneDrive/Desktop/digitalfractal-buzryde-customer/digitalfractal-buzryde-customer/BuzRyde-main/android/app/.cxx/RelWithDebInfo/5o344s5d/armeabi-v7a/CMakeFiles/rebuild_cache.dir
