@@ -1,13 +1,29 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:customer/themes/app_colors.dart';
 import 'package:customer/utils/DarkThemeProvider.dart';
 import 'package:customer/utils/utils.dart';
 import 'package:customer/widget/osm_map_search_place.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_osm_plugin/flutter_osm_plugin.dart';
+import 'package:flutter_map/flutter_map.dart' as fm;
+import 'package:latlong2/latlong.dart' as ll;
 import 'package:get/get.dart';
-import 'package:osm_nominatim/osm_nominatim.dart';
 import 'package:provider/provider.dart';
+import 'package:http/http.dart' as http;
+
+class LocationResult {
+  final String displayName;
+  final double latitude;
+  final double longitude;
+  final Map<String, dynamic>? address;
+
+  LocationResult({
+    required this.displayName,
+    required this.latitude,
+    required this.longitude,
+    this.address,
+  });
+}
 
 class LocationPicker extends StatefulWidget {
   final bool isSource;
@@ -18,137 +34,67 @@ class LocationPicker extends StatefulWidget {
 }
 
 class _LocationPickerState extends State<LocationPicker> {
-  GeoPoint? selectedLocation;
-  late MapController mapController;
-  Place? place;
+  ll.LatLng? selectedLocation;
+  late fm.MapController mapController;
+  LocationResult? locationResult;
   TextEditingController textController = TextEditingController();
-  List<GeoPoint> _markers = [];
+  List<fm.Marker> _markers = [];
   bool _isLoading = false;
   Timer? _regionChangeDebounce;
 
   @override
   void initState() {
     super.initState();
-    mapController = MapController(
-      initMapWithUserPosition: const UserTrackingOption(enableTracking: false, unFollowUser: true),
-    );
-    // Listen for map movement and update marker/address
-    mapController.listenerMapSingleTapping.addListener(() async {
-      if (mapController.listenerMapSingleTapping.value != null) {
-        setState(() {
-          _isLoading = true;
-        });
-        GeoPoint position = mapController.listenerMapSingleTapping.value!;
-        await addMarker(position);
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    });
-    mapController.listenerMapLongTapping.addListener(() async {
-      if (mapController.listenerMapLongTapping.value != null) {
-        setState(() {
-          _isLoading = true;
-        });
-        GeoPoint position = mapController.listenerMapLongTapping.value!;
-        await addMarker(position);
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    });
-    mapController.listenerRegionIsChanging.addListener(() async {
-      // Called when the map is being moved
-      // We only want to update when the movement stops, so debounce
-      if (_regionChangeDebounce != null) {
-        _regionChangeDebounce!.cancel();
-      }
-      _regionChangeDebounce = Timer(const Duration(milliseconds: 500), () async {
-        final center = await mapController.centerMap;
-        setState(() {
-          _isLoading = true;
-        });
-        await addMarker(center);
-        setState(() {
-          _isLoading = false;
-        });
-      });
-    });
+    mapController = fm.MapController();
+    _setUserLocation();
   }
 
-  _listerTapPosition() async {
-    mapController.listenerMapSingleTapping.addListener(() async {
-      if (mapController.listenerMapSingleTapping.value != null) {
-      setState(() {
-          _isLoading = true;
-      });
-        GeoPoint position = mapController.listenerMapSingleTapping.value!;
-        await addMarker(position);
-        setState(() {
-          _isLoading = false;
-        });
-      }
+  Future<void> addMarker(ll.LatLng position) async {
+    setState(() {
+      _markers.clear();
+      _markers.add(
+        fm.Marker(
+          point: position,
+          child: const Icon(
+            Icons.location_on,
+            color: Colors.red,
+            size: 40,
+          ),
+        ),
+      );
+      selectedLocation = position;
     });
-  }
 
-  addMarker(GeoPoint? position) async {
-    if (position != null) {
-      for (var marker in _markers) {
-        await mapController.removeMarker(marker);
-      }
-      setState(() {
-        _markers.clear();
-      });
-
-      // Add marker to the map
-      await mapController
-          .addMarker(position,
-                markerIcon: const MarkerIcon(
-                  icon: Icon(Icons.location_on, size: 26),
-                ))
-            .then((v) {
-          _markers.add(position);
-        });
-
-      // Fetch location data with a timeout
+    // Fetch location data with a timeout
     try {
-        place = await Nominatim.reverseSearch(
-          lat: position.latitude,
-          lon: position.longitude,
-          zoom: 14,
-          addressDetails: true,
-          extraTags: true,
-          nameDetails: true,
-        ).timeout(const Duration(seconds: 5), onTimeout: () {
-          throw Exception('Location search timed out');
+      final response = await http.get(
+        Uri.parse('https://nominatim.openstreetmap.org/reverse?format=json&lat=${position.latitude}&lon=${position.longitude}'),
+      ).timeout(const Duration(seconds: 5), onTimeout: () {
+        throw Exception('Location search timed out');
       });
-        setState(() {});
-    } catch (e) {
-        print("Error fetching location: $e");
-        // Set a default placeholder if reverse geocoding fails
-        place = Place(
-          placeId: 0, // fallback id as int
-          osmId: 0, // fallback OSM id
-          osmType: "unknown", // fallback type
-          displayName: "Selected location",
-          lat: position.latitude, // as double
-          lon: position.longitude, // as double
-          boundingBox: [
-            position.latitude.toString(),
-            position.latitude.toString(),
-            position.longitude.toString(),
-            position.longitude.toString(),
-          ],
-          placeRank: 0, // fallback rank
-          category: "unknown", // fallback category
-          type: "unknown", // fallback type
-          importance: 0.0, // fallback importance
-    );
-        setState(() {});
-  }
 
-      mapController.moveTo(position, animate: true);
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        locationResult = LocationResult(
+          displayName: data['display_name'] ?? "Selected location",
+          latitude: position.latitude,
+          longitude: position.longitude,
+          address: data['address'],
+        );
+      } else {
+        throw Exception('Failed to get location name');
+      }
+    } catch (e) {
+      print("Error fetching location: $e");
+      // Set a default placeholder if reverse geocoding fails
+      locationResult = LocationResult(
+        displayName: "Selected location",
+        latitude: position.latitude,
+        longitude: position.longitude,
+      );
     }
+
+    setState(() {});
   }
 
   Future<void> _setUserLocation() async {
@@ -157,12 +103,12 @@ class _LocationPickerState extends State<LocationPicker> {
         _isLoading = true;
       });
       final locationData = await Utils.getCurrentLocation();
-      selectedLocation = GeoPoint(
-        latitude: locationData.latitude,
-        longitude: locationData.longitude,
-    );
+      selectedLocation = ll.LatLng(
+        locationData.latitude,
+        locationData.longitude,
+      );
       await addMarker(selectedLocation!);
-      mapController.moveTo(selectedLocation!, animate: true);
+      mapController.move(selectedLocation!, 16.0);
       setState(() {
         _isLoading = false;
       });
@@ -171,13 +117,12 @@ class _LocationPickerState extends State<LocationPicker> {
         _isLoading = false;
       });
       print("Error getting location: $e");
-      // Handle error (e.g., show a snackbar to the user)
+    }
   }
-}
 
   @override
   void dispose() {
-    mapController.dispose();
+    _regionChangeDebounce?.cancel();
     super.dispose();
   }
 
@@ -190,22 +135,28 @@ class _LocationPickerState extends State<LocationPicker> {
       ),
       body: Stack(
         children: [
-          OSMFlutter(
-            controller: mapController,
-            mapIsLoading: const Center(child: CircularProgressIndicator()),
-            osmOption: OSMOption(
-              userLocationMarker: UserLocationMaker(
-                  personMarker: MarkerIcon(iconWidget: Image.asset("assets/images/pickup.png")),
-                  directionArrowMarker: MarkerIcon(iconWidget: Image.asset("assets/images/pickup.png"))),
-              isPicker: true,
-              zoomOption: const ZoomOption(initZoom: 14),
+          fm.FlutterMap(
+            mapController: mapController,
+            options: fm.MapOptions(
+              initialCenter: selectedLocation ?? ll.LatLng(45.521563, -122.677433),
+              initialZoom: 16.0,
+              onTap: (tapPosition, point) async {
+                setState(() {
+                  _isLoading = true;
+                });
+                await addMarker(point);
+                setState(() {
+                  _isLoading = false;
+                });
+              },
             ),
-            onMapIsReady: (active) {
-              if (active) {
-                _setUserLocation();
-                _listerTapPosition();
-              }
-            },
+            children: [
+              fm.TileLayer(
+                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                userAgentPackageName: 'com.buzryde.com',
+              ),
+              fm.MarkerLayer(markers: _markers),
+            ],
           ),
           if (_isLoading)
             Container(
@@ -214,7 +165,7 @@ class _LocationPickerState extends State<LocationPicker> {
                 child: CircularProgressIndicator(),
               ),
             ),
-          if (place?.displayName != null)
+          if (locationResult?.displayName != null)
             Align(
               alignment: Alignment.bottomCenter,
               child: Container(
@@ -236,18 +187,18 @@ class _LocationPickerState extends State<LocationPicker> {
                   children: [
                     Expanded(
                       child: Text(
-                        place?.displayName ?? '',
-                        style: const TextStyle(fontSize: 16,color: Colors.black),
+                        locationResult?.displayName ?? '',
+                        style: const TextStyle(fontSize: 16, color: Colors.black),
                       ),
                     ),
                     ElevatedButton(
-                      onPressed: (_isLoading || (place?.displayName == null || place!.displayName!.isEmpty))
+                      onPressed: (_isLoading || (locationResult?.displayName == null || locationResult!.displayName.isEmpty))
                           ? null
                           : () {
-                              Get.back(result: place);
+                              Get.back(result: locationResult);
                             },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: (_isLoading || (place?.displayName == null || place!.displayName!.isEmpty))
+                        backgroundColor: (_isLoading || (locationResult?.displayName == null || locationResult!.displayName.isEmpty))
                             ? Colors.grey[400]
                             : (themeChange.getThem() ? AppColors.darkModePrimary : AppColors.primary),
                         shape: RoundedRectangleBorder(
@@ -258,7 +209,7 @@ class _LocationPickerState extends State<LocationPicker> {
                       child: Text(
                         widget.isSource ? 'Confirm Pickup' : 'Confirm Destination',
                         style: TextStyle(
-                          color: (_isLoading || (place?.displayName == null || place!.displayName!.isEmpty))
+                          color: (_isLoading || (locationResult?.displayName == null || locationResult!.displayName.isEmpty))
                               ? Colors.white.withOpacity(0.7)
                               : Colors.white,
                           fontWeight: FontWeight.bold,
@@ -282,9 +233,10 @@ class _LocationPickerState extends State<LocationPicker> {
                           setState(() {
                             _isLoading = true;
                           });
-                          SearchInfo place = value;
-                          textController = TextEditingController(text: place.address.toString());
-                          await addMarker(place.point);
+                          SearchResult place = value;
+                          textController = TextEditingController(text: place.displayName);
+                          await addMarker(ll.LatLng(place.lat, place.lon));
+                          mapController.move(ll.LatLng(place.lat, place.lon), 16.0);
                           setState(() {
                             _isLoading = false;
                           });
@@ -313,16 +265,16 @@ class _LocationPickerState extends State<LocationPicker> {
       child: TextField(
         controller: textController,
         textInputAction: TextInputAction.done,
-        style: TextStyle(color: Colors.black),
+        style: const TextStyle(color: Colors.black),
         decoration: InputDecoration(
           prefixIcon: IconButton(
-            icon: const Icon(Icons.location_on,color: Colors.black,),
+            icon: const Icon(Icons.location_on, color: Colors.black),
             onPressed: () {},
           ),
           fillColor: Colors.white,
           filled: true,
           hintText: title,
-          hintStyle: TextStyle(color: Colors.black),
+          hintStyle: const TextStyle(color: Colors.black),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10.0),
           ),

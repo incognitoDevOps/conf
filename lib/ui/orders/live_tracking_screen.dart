@@ -3,7 +3,8 @@ import 'package:customer/constant/show_toast_dialog.dart';
 import 'package:customer/controller/live_tracking_controller.dart';
 import 'package:customer/themes/app_colors.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_osm_plugin/flutter_osm_plugin.dart';
+import 'package:flutter_map/flutter_map.dart' as fm;
+import 'package:latlong2/latlong.dart' as ll;
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
@@ -30,29 +31,36 @@ class LiveTrackingScreen extends StatelessWidget {
                 )),
           ),
           body: Constant.selectedMapType == 'osm'
-              ? OSMFlutter(
-                  controller: controller.mapOsmController,
-                  osmOption: const OSMOption(
-                    userTrackingOption: UserTrackingOption(
-                      enableTracking: false,
-                      unFollowUser: false,
+              ? fm.FlutterMap(
+                  options: fm.MapOptions(
+                    initialCenter: ll.LatLng(
+                      Constant.currentLocation?.latitude ?? 45.521563,
+                      Constant.currentLocation?.longitude ?? -122.677433,
                     ),
-                    zoomOption: ZoomOption(
-                      initZoom: 16,
-                      minZoomLevel: 2,
-                      maxZoomLevel: 19,
-                      stepZoom: 1.0,
-                    ),
-                    roadConfiguration: RoadOption(
-                      roadColor: Colors.yellowAccent,
-                    ),
+                    initialZoom: 16.0,
+                    minZoom: 2.0,
+                    maxZoom: 19.0,
                   ),
-                  onMapIsReady: (active) async {
-                    if (active) {
-                      controller.getArgument();
-                      ShowToastDialog.closeLoader();
-                    }
-                  })
+                  children: [
+                    fm.TileLayer(
+                      urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                      userAgentPackageName: 'com.buzryde.com',
+                    ),
+                    fm.MarkerLayer(
+                      markers: _buildFlutterMapMarkers(controller),
+                    ),
+                    fm.PolylineLayer(
+                      polylines: [
+                        if (controller.routePoints.isNotEmpty)
+                          fm.Polyline(
+                            points: controller.routePoints,
+                            strokeWidth: 4.0,
+                            color: AppColors.primary,
+                          ),
+                      ],
+                    ),
+                  ],
+                )
               : Obx(
                   () => GoogleMap(
                     myLocationEnabled: true,
@@ -77,5 +85,50 @@ class LiveTrackingScreen extends StatelessWidget {
         );
       },
     );
+  }
+
+  List<fm.Marker> _buildFlutterMapMarkers(LiveTrackingController controller) {
+    List<fm.Marker> markers = [];
+    
+    // Add driver marker
+    if (controller.driverUserModel.value.location != null) {
+      markers.add(
+        fm.Marker(
+          point: ll.LatLng(
+            controller.driverUserModel.value.location!.latitude!,
+            controller.driverUserModel.value.location!.longitude!,
+          ),
+          child: const Icon(Icons.local_taxi, color: Colors.blue, size: 30),
+        ),
+      );
+    }
+    
+    // Add source marker
+    if (controller.type.value == "orderModel" && controller.orderModel.value.sourceLocationLAtLng != null) {
+      markers.add(
+        fm.Marker(
+          point: ll.LatLng(
+            controller.orderModel.value.sourceLocationLAtLng!.latitude!,
+            controller.orderModel.value.sourceLocationLAtLng!.longitude!,
+          ),
+          child: const Icon(Icons.location_on, color: Colors.green, size: 30),
+        ),
+      );
+    }
+    
+    // Add destination marker
+    if (controller.type.value == "orderModel" && controller.orderModel.value.destinationLocationLAtLng != null) {
+      markers.add(
+        fm.Marker(
+          point: ll.LatLng(
+            controller.orderModel.value.destinationLocationLAtLng!.latitude!,
+            controller.orderModel.value.destinationLocationLAtLng!.longitude!,
+          ),
+          child: const Icon(Icons.flag, color: Colors.red, size: 30),
+        ),
+      );
+    }
+    
+    return markers;
   }
 }

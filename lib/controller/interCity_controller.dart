@@ -103,8 +103,8 @@ class InterCityController extends GetxController {
   RxString amount = "".obs;
 
   calculateOsmAmount() async {
-    print(sourceLocationLAtLng.value.latitude.toString() + "::: duration sourceLocationLAtLng :::" + sourceLocationLAtLng.value.longitude.toString());
-    print(destinationLocationLAtLng.value.latitude.toString() + "::: duration destinationLocationLAtLng :::" + destinationLocationLAtLng.value.longitude.toString());
+    print("${sourceLocationLAtLng.value.latitude}::: duration sourceLocationLAtLng :::${sourceLocationLAtLng.value.longitude}");
+    print("${destinationLocationLAtLng.value.latitude}::: duration destinationLocationLAtLng :::${destinationLocationLAtLng.value.longitude}");
     if (selectedInterCityType.value.id == "Kn2VEnPI3ikF58uK8YqY") {
       if (selectedFreightVehicle.value.id == null) {
         amount.value = "0.0";

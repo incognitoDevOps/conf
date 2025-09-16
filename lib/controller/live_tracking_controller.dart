@@ -9,7 +9,8 @@ import 'package:customer/themes/app_colors.dart';
 import 'package:customer/utils/fire_store_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_osm_plugin/flutter_osm_plugin.dart';
+import 'package:flutter_map/flutter_map.dart' as fm;
+import 'package:latlong2/latlong.dart' as ll;
 import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -20,12 +21,7 @@ class LiveTrackingController extends GetxController {
   @override
   void onInit() {
     addMarkerSetup();
-    if (Constant.selectedMapType == 'osm') {
-      ShowToastDialog.showLoader("Please wait");
-      mapOsmController = MapController(initPosition: GeoPoint(latitude: 20.9153, longitude: -100.7439), useExternalTracking: false); //OSM
-    } else {
-      getArgument();
-    }
+    getArgument();
 
     super.onInit();
   }
@@ -236,18 +232,12 @@ class LiveTrackingController extends GetxController {
   }
 
   addMarkerSetup() async {
-    if (Constant.selectedMapType != 'osm') {
-      final Uint8List departure = await Constant().getBytesFromAsset('assets/images/pickup.png', 100);
-      final Uint8List destination = await Constant().getBytesFromAsset('assets/images/dropoff.png', 100);
-      final Uint8List driver = await Constant().getBytesFromAsset('assets/images/ic_cab.png', 50);
-      departureIcon = BitmapDescriptor.fromBytes(departure);
-      destinationIcon = BitmapDescriptor.fromBytes(destination);
-      driverIcon = BitmapDescriptor.fromBytes(driver);
-    } else {
-      departureOsmIcon = Image.asset("assets/images/pickup.png", width: 30, height: 30); //OSM
-      destinationOsmIcon = Image.asset("assets/images/dropoff.png", width: 30, height: 30); //OSM
-      driverOsmIcon = Image.asset("assets/images/ic_cab.png", width: 30, height: 30); //OSM
-    }
+    final Uint8List departure = await Constant().getBytesFromAsset('assets/images/pickup.png', 100);
+    final Uint8List destination = await Constant().getBytesFromAsset('assets/images/dropoff.png', 100);
+    final Uint8List driver = await Constant().getBytesFromAsset('assets/images/ic_cab.png', 50);
+    departureIcon = BitmapDescriptor.fromBytes(departure);
+    destinationIcon = BitmapDescriptor.fromBytes(destination);
+    driverIcon = BitmapDescriptor.fromBytes(driver);
   }
 
   RxMap<PolylineId, Polyline> polyLines = <PolylineId, Polyline>{}.obs;
@@ -301,136 +291,11 @@ class LiveTrackingController extends GetxController {
   }
 
   //OSM
-  late MapController mapOsmController;
-  Rx<RoadInfo> roadInfo = RoadInfo().obs;
-  Map<String, GeoPoint> osmMarkers = <String, GeoPoint>{};
-  Image? departureOsmIcon; //OSM
-  Image? destinationOsmIcon; //OSM
-  Image? driverOsmIcon;
+  late fm.MapController mapController;
+  List<ll.LatLng> routePoints = [];
+  Map<String, ll.LatLng> mapMarkers = <String, ll.LatLng>{};
+  Widget? departureIcon;
+  Widget? destinationIcon;
+  Widget? driverIcon;
 
-  void getOSMPolyline() async {
-    try {
-      GeoPoint destinationLocation;
-      if (type.value == "orderModel") {
-        if (orderModel.value.status == Constant.rideInProgress) {
-          destinationLocation =
-              GeoPoint(latitude: orderModel.value.destinationLocationLAtLng!.latitude ?? 0, longitude: orderModel.value.destinationLocationLAtLng!.longitude ?? 0);
-        } else {
-          destinationLocation = GeoPoint(latitude: orderModel.value.sourceLocationLAtLng!.latitude ?? 0, longitude: orderModel.value.sourceLocationLAtLng!.longitude ?? 0);
-        }
-      } else {
-        if (type.value == "orderModel") {
-          destinationLocation =
-              GeoPoint(latitude: intercityOrderModel.value.destinationLocationLAtLng!.latitude ?? 0, longitude: intercityOrderModel.value.destinationLocationLAtLng!.latitude ?? 0);
-        } else {
-          destinationLocation =
-              GeoPoint(latitude: intercityOrderModel.value.sourceLocationLAtLng!.latitude ?? 0, longitude: intercityOrderModel.value.sourceLocationLAtLng!.latitude ?? 0);
-        }
-      }
-      if (orderModel.value.destinationLocationLAtLng != null) {
-        await mapOsmController.removeLastRoad();
-        roadInfo.value = await mapOsmController.drawRoad(
-          GeoPoint(latitude: driverUserModel.value.location!.latitude!, longitude: driverUserModel.value.location!.longitude!),
-          destinationLocation,
-          roadType: RoadType.car,
-          roadOption: const RoadOption(
-            roadWidth: 15,
-            roadColor: AppColors.primary, //themeChange ? AppColors.darkModePrimary :
-            zoomInto: false,
-          ),
-        );
-        mapOsmController.moveTo(
-          GeoPoint(latitude: driverUserModel.value.location!.latitude!, longitude: driverUserModel.value.location!.longitude!),
-          animate: true,
-        );
-      }
-    } catch (e) {
-      print('Error: $e');
-    }
-  }
-
-  Future<void> updateOSMCameraLocation({required GeoPoint source, required GeoPoint destination}) async {
-    BoundingBox bounds;
-
-    if (source.latitude > destination.latitude && source.longitude > destination.longitude) {
-      bounds = BoundingBox(
-        north: source.latitude,
-        south: destination.latitude,
-        east: source.longitude,
-        west: destination.longitude,
-      );
-    } else if (source.longitude > destination.longitude) {
-      bounds = BoundingBox(
-        north: destination.latitude,
-        south: source.latitude,
-        east: source.longitude,
-        west: destination.longitude,
-      );
-    } else if (source.latitude > destination.latitude) {
-      bounds = BoundingBox(
-        north: source.latitude,
-        south: destination.latitude,
-        east: destination.longitude,
-        west: source.longitude,
-      );
-    } else {
-      bounds = BoundingBox(
-        north: destination.latitude,
-        south: source.latitude,
-        east: destination.longitude,
-        west: source.longitude,
-      );
-    }
-
-    await mapOsmController.zoomToBoundingBox(bounds, paddinInPixel: 100);
-  }
-
-  setOsmMarker({required GeoPoint departure, required GeoPoint destination}) async {
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (osmMarkers.containsKey('Driver')) {
-        await mapOsmController.removeMarker(osmMarkers['Driver']!);
-      }
-
-      await mapOsmController
-          .addMarker(GeoPoint(latitude: driverUserModel.value.location!.latitude!, longitude: driverUserModel.value.location!.longitude!),
-              markerIcon: MarkerIcon(iconWidget: driverOsmIcon),
-              angle: pi / 3,
-              iconAnchor: IconAnchor(
-                anchor: Anchor.top,
-              ))
-          .then((v) {
-        osmMarkers['Driver'] = GeoPoint(latitude: driverUserModel.value.location!.latitude!, longitude: driverUserModel.value.location!.longitude!);
-      });
-
-      if (osmMarkers.containsKey('Source')) {
-        await mapOsmController.removeMarker(osmMarkers['Source']!);
-      }
-      await mapOsmController
-          .addMarker(departure,
-              markerIcon: MarkerIcon(iconWidget: departureOsmIcon),
-              angle: pi / 3,
-              iconAnchor: IconAnchor(
-                anchor: Anchor.top,
-              ))
-          .then((v) {
-        osmMarkers['Source'] = departure;
-      });
-
-      if (osmMarkers.containsKey('Destination')) {
-        await mapOsmController.removeMarker(osmMarkers['Destination']!);
-      }
-
-      await mapOsmController
-          .addMarker(destination,
-              markerIcon: MarkerIcon(iconWidget: destinationOsmIcon),
-              angle: pi / 3,
-              iconAnchor: IconAnchor(
-                anchor: Anchor.top,
-              ))
-          .then((v) {
-        osmMarkers['Destination'] = destination;
-      });
-    });
-    getOSMPolyline();
-  }
 }

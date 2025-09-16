@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:customer/controller/osm_search_place_controller.dart';
 import 'package:customer/themes/app_colors.dart';
 import 'package:customer/utils/DarkThemeProvider.dart';
@@ -30,7 +31,7 @@ class OsmSearchPlacesApi extends StatelessWidget {
                 ),
               ),
               title: Text(
-                'Search places Api',
+                'Search places',
                 style: TextStyle(
                   color: themeChange.getThem() ? AppColors.lightGray : AppColors.lightGray,
                   fontSize: 16,
@@ -47,7 +48,7 @@ class OsmSearchPlacesApi extends StatelessWidget {
                       textCapitalization: TextCapitalization.sentences,
                       controller: controller.searchTxtController.value,
                       textAlign: TextAlign.start,
-                      style: GoogleFonts.poppins(color: Colors.black ),
+                      style: GoogleFonts.poppins(color: Colors.black),
                       decoration: InputDecoration(
                           isDense: true,
                           filled: true,
@@ -88,7 +89,10 @@ class OsmSearchPlacesApi extends StatelessWidget {
                       itemCount: controller.suggestionsList.length,
                       itemBuilder: (context, index) {
                         return ListTile(
-                          title: Text(controller.suggestionsList[index].address.toString(),style: TextStyle(color:  Colors.black),),
+                          title: Text(
+                            controller.suggestionsList[index].displayName,
+                            style: const TextStyle(color: Colors.black),
+                          ),
                           onTap: () {
                             Get.back(result: controller.suggestionsList[index]);
                           },

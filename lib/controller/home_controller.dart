@@ -27,7 +27,6 @@ import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:osm_nominatim/osm_nominatim.dart';
 import 'package:http/http.dart' as http;
 
 class HomeController extends GetxController {
@@ -102,19 +101,21 @@ class HomeController extends GetxController {
               "${placeMarks.first.name}, ${placeMarks.first.subLocality}, ${placeMarks.first.locality}, ${placeMarks.first.administrativeArea}, ${placeMarks.first.postalCode}, ${placeMarks.first.country}";
         } else {
           try {
-            Place place = await Nominatim.reverseSearch(
-              lat: Constant.currentLocation!.latitude,
-              lon: Constant.currentLocation!.longitude,
-              zoom: 14,
-              addressDetails: true,
-              extraTags: true,
-              nameDetails: true,
+            // Use reverse geocoding with HTTP request to Nominatim
+            final response = await http.get(
+              Uri.parse('https://nominatim.openstreetmap.org/reverse?format=json&lat=${Constant.currentLocation!.latitude}&lon=${Constant.currentLocation!.longitude}'),
             ).timeout(const Duration(seconds: 5), onTimeout: () {
               throw Exception('Location search timed out');
             });
-            currentLocation.value = place.displayName.toString();
-            Constant.country = place.address?['country'] ?? '';
-            Constant.city = place.address?['city'] ?? '';
+            
+            if (response.statusCode == 200) {
+              final data = json.decode(response.body);
+              currentLocation.value = data['display_name'] ?? 'Current Location';
+              Constant.country = data['address']?['country'] ?? '';
+              Constant.city = data['address']?['city'] ?? data['address']?['town'] ?? '';
+            } else {
+              throw Exception('Failed to get location name');
+            }
           } catch (e) {
             print("Error getting location name: $e");
             currentLocation.value = "Current Location";
